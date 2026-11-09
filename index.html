@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Семейный бюджет</title>
+<meta name="description" content="Учёт семейных финансов: расходы, доходы, долги, копилка и накопления на дом.">
+<meta name="theme-color" content="#1f6feb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="referrer" content="no-referrer">
+<style>
+  :root {
+    --bg: #f3f5f8; --card: #ffffff; --text: #1d2330; --muted: #6b7385; --line: #e3e7ee;
+    --accent: #1f6feb; --accent-soft: #e6efff; --green: #1a8f4c; --green-soft: #e3f5ea;
+    --yellow: #b7791f; --yellow-soft: #fdf3dc; --red: #c93636; --red-soft: #fde8e8;
+    --blue: #2b6cb0; --blue-soft: #e6f0fa; --bar: #e9edf3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1c212b; --text: #e8ebf1; --muted: #9aa3b5; --line: #2c3341;
+      --accent: #5b9bff; --accent-soft: #1f2d47; --green: #4cc982; --green-soft: #183326;
+      --yellow: #e6b04d; --yellow-soft: #3a2f17; --red: #f07070; --red-soft: #3d1d1d;
+      --blue: #6eaef0; --blue-soft: #1a2c40; --bar: #2b3240;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.4 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 14px 16px 8px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  main { padding: 0 12px 96px; max-width: 640px; margin: 0 auto; }
+  .card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 12px;
+          box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .card h2 { font-size: 16px; margin: 0 0 10px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .big { font-size: 26px; font-weight: 700; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+
+  nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; display: flex;
+        background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  nav button { flex: 1; border: 0; background: none; color: var(--muted); padding: 8px 0 10px;
+               font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  nav button .ic { font-size: 20px; line-height: 1; }
+  nav button.on { color: var(--accent); font-weight: 600; }
+
+  .seg { display: flex; background: var(--bar); border-radius: 10px; padding: 3px; margin-bottom: 12px; }
+  .seg button { flex: 1; border: 0; background: none; padding: 9px 2px; border-radius: 8px;
+                font-size: 14px; color: var(--text); }
+  .seg button.on { background: var(--card); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  input, select, textarea { width: 100%; font: inherit; color: var(--text); background: var(--bg);
+       border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .amount { font-size: 28px; font-weight: 700; text-align: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button { border: 1px solid var(--line); background: var(--bg); color: var(--text);
+                  border-radius: 18px; padding: 8px 12px; font-size: 14px; }
+  .chips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chips .grp { width: 100%; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .two { display: flex; gap: 8px; } .two > * { flex: 1; }
+  .btn { width: 100%; border: 0; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600;
+         background: var(--accent); color: #fff; margin-top: 16px; }
+  .btn:disabled { opacity: .5; }
+  .btn.small { width: auto; padding: 9px 14px; font-size: 14px; margin: 0; }
+
+  .bar { height: 8px; background: var(--bar); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+  .bar > div { height: 100%; background: var(--green); border-radius: 4px; }
+  .bar.yellow > div { background: var(--yellow); } .bar.red > div { background: var(--red); }
+  .item { padding: 10px 0; border-top: 1px solid var(--line); }
+  .item:first-of-type { border-top: 0; }
+
+  .alert { border-radius: 10px; padding: 9px 12px; margin-bottom: 6px; font-size: 14px; }
+  .alert.red { background: var(--red-soft); color: var(--red); }
+  .alert.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .alert.blue { background: var(--blue-soft); color: var(--blue); }
+
+  .op { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+  .op:first-of-type { border-top: 0; }
+  .op .w { flex: 1; min-width: 0; }
+  .op .w div:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .op .del { border: 0; background: none; color: var(--muted); font-size: 18px; padding: 4px 8px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 9px; background: var(--bar); color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 7px 4px; text-align: right; border-top: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; border-top: 0; }
+
+  #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: #1d2330; color: #fff;
+           padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .2s;
+           pointer-events: none; z-index: 20; max-width: 90%; text-align: center; }
+  #toast.show { opacity: 1; }
+  #loading { text-align: center; padding: 60px 16px; color: var(--muted); }
+  header { padding-top: calc(14px + env(safe-area-inset-top)); }
+  .icon-btn { border: 0; background: none; color: var(--muted); font-size: 22px; padding: 2px 6px; line-height: 1; }
+  .icon-btn.spin { animation: spin 1s linear infinite; color: var(--accent); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #install .row > div { flex: 1; }
+  #connect p { margin: 0 0 10px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="row" style="align-items:center">
+    <h1 id="title">Семейный бюджет</h1>
+    <button id="refresh" class="icon-btn" title="Обновить">⟳</button>
+  </div>
+  <div class="sub" id="subtitle">Загрузка…</div>
+  <div class="sub neg hidden" id="offline"></div>
+</header>
+<main>
+  <div id="loading">Загружаю данные из таблицы…</div>
+  <section id="connect" class="hidden">
+    <div class="card">
+      <h2>Подключение телефона</h2>
+      <p id="connect-msg">Чтобы приложение увидело вашу таблицу, откройте <b>ссылку подключения</b>.
+        Её показывает таблица: меню «Семейный бюджет → Ссылка для телефонов».</p>
+      <p class="muted">Или вставьте эту ссылку сюда:</p>
+      <textarea id="connect-input" rows="3" placeholder="https://…#c=…"></textarea>
+      <button class="btn" id="connect-btn">Подключить</button>
+    </div>
+  </section>
+  <div id="install" class="card hidden">
+    <div class="row" style="align-items:center">
+      <div>📲 <b>Установите приложение</b><div class="muted" id="install-hint">Chrome: меню ⋮ → «Установить приложение» или «Добавить на главный экран».</div></div>
+      <button class="btn small hidden" id="install-btn">Установить</button>
+    </div>
+  </div>
+  <section id="tab-add" class="hidden"></section>
+  <section id="tab-month" class="hidden"></section>
+  <section id="tab-income" class="hidden"></section>
+  <section id="tab-debts" class="hidden"></section>
+  <section id="tab-kop" class="hidden"></section>
+  <section id="tab-house" class="hidden"></section>
+</main>
+<nav id="nav">
+  <button data-tab="add" class="on"><span class="ic">➕</span>Добавить</button>
+  <button data-tab="month"><span class="ic">📊</span>Месяц</button>
+  <button data-tab="income"><span class="ic">💰</span>Доходы</button>
+  <button data-tab="debts"><span class="ic">📉</span>Долги</button>
+  <button data-tab="kop"><span class="ic">🐷</span>Копилка</button>
+  <button data-tab="house"><span class="ic">🏠</span>Дом</button>
+</nav>
+<div id="toast"></div>
+
+<script>
+var S = null;                       // состояние с сервера
+var tab = 'add';
+var form = { type: 'Расход', cat: '', who: store('who') || '', card: '', date: '', comment: '', amount: '' };
+
+function store(k, v) {
+  try { if (v === undefined) return localStorage.getItem('fb_' + k); localStorage.setItem('fb_' + k, v); } catch (e) { return null; }
+}
+function $(id) { return document.getElementById(id); }
+function money(n) { return String(Math.round(n || 0)).replace('-', '−').replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function dmy(d) { return d.slice(8, 10) + '.' + d.slice(5, 7); }
+function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function () { el.classList.remove('show'); }, 2600); }
+function bar(pct, plain) {
+  var cls = plain ? '' : pct >= 100 ? 'red' : pct >= 90 ? 'yellow' : '';
+  return '<div class="bar ' + cls + '"><div style="width:' + Math.min(100, pct) + '%"></div></div>';
+}
+
+// ------------------------------------------------------------ связь с таблицей
+function getConn() {
+  try { var c = JSON.parse(store('conn') || 'null'); return c && c.u && c.k ? c : null; } catch (e) { return null; }
+}
+
+/** Ссылку подключения (…#c=КОД) или сам КОД превращает в {u: адрес API, k: ключ}. */
+function parseConn(text) {
+  var m = String(text || '').trim().match(/(?:[#&?]c=)?([A-Za-z0-9_\-]+=*)$/);
+  if (!m) return null;
+  try {
+    var b = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    var c = JSON.parse(atob(b));
+    if (/^https:\/\/script\.google\.com\/.+\/exec$/.test(c.u) && String(c.k).length >= 32) return { u: c.u, k: String(c.k) };
+  } catch (e) { /* не код */ }
+  return null;
+}
+
+function showConnect(msg) {
+  $('loading').classList.add('hidden');
+  ['add', 'month', 'income', 'debts', 'kop', 'house'].forEach(function (t) { $('tab-' + t).classList.add('hidden'); });
+  $('connect').classList.remove('hidden');
+  $('nav').classList.add('hidden');
+  $('subtitle').textContent = 'Телефон не подключён';
+  if (msg) $('connect-msg').innerHTML = esc(msg);
+}
+
+function setOffline(text) {
+  $('offline').textContent = text || '';
+  $('offline').classList.toggle('hidden', !text);
+  $('refresh').classList.remove('spin');
+}
+
+var busy = 0;
+function call(fn, args, ok) {
+  var c = getConn();
+  if (!c) { showConnect(); return; }
+  busy++; $('refresh').classList.add('spin');
+  fetch(c.u, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // «простой» запрос: Google принимает без лишних проверок
+    body: JSON.stringify({ key: c.k, action: fn, args: args || [] }),
+    redirect: 'follow'
+  }).then(function (r) {
+    if (!r.ok) throw new Error('таблица ответила ошибкой ' + r.status);
+    return r.json();
+  }).then(function (res) {
+    if (!res.ok) throw new Error(res.error);
+    S = res.data;
+    store('state', JSON.stringify(S));
+    store('stateAt', String(Date.now()));
+    setOffline('');
+    ok && ok();
+    render();
+  }).catch(function (e) {
+    var msg = String(e && e.message || e);
+    var b = $('save'); if (b) { b.disabled = false; b.textContent = 'Сохранить'; }
+    var bb = $('badd'); if (bb) bb.disabled = false;
+    if (/^KEY:/.test(msg)) {
+      store('conn', '');
+      showConnect('Ключ больше не подходит (его сменили в таблице). Откройте новую ссылку подключения.');
+      return;
+    }
+    var net = navigator.onLine === false || e instanceof TypeError;
+    setOffline(net ? '⚠️ Нет связи с таблицей — показаны данные ' + savedAtText() : '');
+    toast(net ? (fn === 'getState' ? 'Нет интернета — показаны сохранённые данные' : 'Не сохранено: нет интернета. Попробуйте ещё раз.')
+              : 'Ошибка: ' + msg);
+  }).then(function () {
+    busy--; if (!busy) $('refresh').classList.remove('spin');
+  });
+}
+
+function savedAtText() {
+  var t = Number(store('stateAt'));
+  if (!t) return 'последние сохранённые';
+  var d = new Date(t);
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  return 'на ' + p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+// ------------------------------------------------------------ навигация
+$('nav').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  tab = b.dataset.tab; render(); window.scrollTo(0, 0);
+});
+
+function render() {
+  if (!S) return;
+  $('loading').classList.add('hidden');
+  $('connect').classList.add('hidden');
+  $('nav').classList.remove('hidden');
+  $('install').classList.toggle('hidden', isInstalled() || tab !== 'add');
+  $('subtitle').textContent = 'Сегодня ' + dmy(S.today) + '.' + S.today.slice(0, 4) + ' · ' + S.month.text;
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) { b.classList.toggle('on', b.dataset.tab === tab); });
+  ['add', 'month', 'income', 'debts', 'kop', 'house'].forEach(function (t) { $('tab-' + t).classList.toggle('hidden', t !== tab); });
+  ({ add: renderAdd, month: renderMonth, income: renderIncome, debts: renderDebts, kop: renderKop, house: renderHouse })[tab]();
+}
+
+function alertsHtml(filter) {
+  var a = S.alerts.filter(filter || function () { return true; });
+  return a.map(function (x) { return '<div class="alert ' + x.level + '">' + esc(x.text) + '</div>'; }).join('');
+}
+
+// ------------------------------------------------------------ ➕ Добавить
+function catOptions() {
+  var o = S.options;
+  if (form.type === 'Расход') return [['Обязательные', o.budget], ['Копилка', o.kopilka], ['Кредиты', o.credits]];
+  if (form.type === 'Доход') return [['', (o.incomeSources[form.who] || []).concat(['Другое'])]];
+  if (form.type === 'Долг') return [['Кому возвращаем', o.debts]];
+  return [];
+}
+
+function renderAdd() {
+  var o = S.options;
+  if (!form.who || o.people.indexOf(form.who) < 0) form.who = o.people[0] || '';
+  if (!form.card) form.card = o.defaultCard[form.who] || o.cards[0] || '';
+  if (!form.date) form.date = S.today;
+  var groups = catOptions();
+  var chips = groups.map(function (g) {
+    return (g[0] ? '<div class="grp">' + esc(g[0]) + '</div>' : '') + g[1].map(function (c) {
+      return '<button data-cat="' + esc(c) + '" class="' + (form.cat === c ? 'on' : '') + '">' + esc(c) + '</button>';
+    }).join('');
+  }).join('');
+  var catInfo = '';
+  var c = S.cats.filter(function (x) { return x.name === form.cat; })[0];
+  if (form.type === 'Расход' && c) {
+    if (c.group === 'Копилка') catInfo = 'В копилке «' + esc(c.name) + '»: ' + money(c.balance) + ' ₸';
+    else if (c.limit > 0) catInfo = 'Осталось в этом месяце: <b class="' + (c.left < 0 ? 'neg' : '') + '">' + money(c.left) + ' ₸</b> из ' + money(c.limit);
+  }
+  if (form.type === 'Долг' && form.cat) {
+    var d = S.debts.filter(function (x) { return x.name === form.cat; })[0];
+    if (d) catInfo = 'Осталось вернуть: <b>' + money(d.left) + ' ₸</b>';
+  }
+
+  var html = '<div class="card">' +
+    '<div class="seg" id="types">' + ['Расход', 'Доход', 'Долг', 'На дом'].map(function (t) {
+      return '<button data-type="' + t + '" class="' + (form.type === t ? 'on' : '') + '">' + t + '</button>';
+    }).join('') + '</div>' +
+    '<input id="amount" class="amount" inputmode="numeric" autocomplete="off" placeholder="0 ₸" value="' + esc(form.amount ? money(form.amount) : '') + '">' +
+    (groups.length ? '<label>' + (form.type === 'Доход' ? 'Источник' : 'Категория') + '</label><div class="chips" id="cats">' + chips + '</div>' : '') +
+    (catInfo ? '<div class="muted" style="margin-top:8px">' + catInfo + '</div>' : '') +
+    '<label>Кто</label><div class="seg" id="who">' + o.people.map(function (p) {
+      return '<button data-who="' + esc(p) + '" class="' + (form.who === p ? 'on' : '') + '">' + esc(p) + '</button>';
+    }).join('') + '</div>' +
+    '<div class="two"><div><label>' + (form.type === 'Доход' ? 'На карту' : 'Карта') + '</label><select id="card">' +
+      o.cards.map(function (k) { return '<option' + (k === form.card ? ' selected' : '') + '>' + esc(k) + '</option>'; }).join('') +
+    '</select></div><div><label>Дата</label><input id="date" type="date" value="' + esc(form.date) + '"></div></div>' +
+    '<label>Комментарий</label><input id="comment" placeholder="например: Магнум, продукты" value="' + esc(form.comment) + '">' +
+    '<button class="btn" id="save">Сохранить</button>' +
+  '</div>';
+
+  html += '<div class="card"><h2>Записи за ' + esc(S.month.text) + '</h2>' +
+    (S.recent.length ? S.recent.map(function (r) {
+      var sign = r.type === 'Доход' ? '+' : '−';
+      var cls = r.type === 'Доход' ? 'pos' : '';
+      return '<div class="op"><div class="w"><div>' + esc(r.cat) + ' <span class="tag">' + esc(r.type) + '</span></div>' +
+        '<div class="muted">' + dmy(r.date) + ' · ' + esc(r.who) + (r.card ? ' · ' + esc(r.card) : '') + (r.comment ? ' · ' + esc(r.comment) : '') + '</div></div>' +
+        '<div class="num ' + cls + '">' + sign + money(r.amount) + '</div>' +
+        '<button class="del" data-id="' + esc(r.id) + '" title="Удалить">✕</button></div>';
+    }).join('') : '<div class="muted">Пока нет записей в этом месяце.</div>') + '</div>';
+  $('tab-add').innerHTML = html;
+
+  $('types').onclick = function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    form.type = b.dataset.type; form.cat = ''; readForm(); renderAdd();
+  };
+  if ($('cats')) $('cats').onclick = function (e) {
+    var b = e.target.closest('button[data-cat]'); if (!b) return;
+    form.cat = b.dataset.cat; readForm(); renderAdd();
+  };
+  $('who').onclick = function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    readForm(); form.who = b.dataset.who; store('who', form.who);
+    form.card = S.options.defaultCard[form.who] || form.card;
+    if (form.type === 'Доход') form.cat = '';
+    renderAdd();
+  };
+  $('amount').oninput = function () {
+    var digits = this.value.replace(/\D/g, '').slice(0, 10);
+    form.amount = digits ? Number(digits) : '';
+    this.value = digits ? money(form.amount) : '';
+  };
+  $('save').onclick = save;
+  Array.prototype.forEach.call(document.querySelectorAll('.del'), function (b) {
+    b.onclick = function () {
+      if (!confirm('Удалить эту запись?')) return;
+      call('deleteOperation', [b.dataset.id], function () { toast('Запись удалена'); });
+    };
+  });
+}
+
+function readForm() {
+  if ($('card')) form.card = $('card').value;
+  if ($('date')) form.date = $('date').value;
+  if ($('comment')) form.comment = $('comment').value;
+}
+
+function save() {
+  readForm();
+  if (!(form.amount > 0)) { toast('Введите сумму'); $('amount').focus(); return; }
+  if (form.type !== 'На дом' && !form.cat) { toast('Выберите категорию'); return; }
+  $('save').disabled = true; $('save').textContent = 'Сохраняю…';
+  var sent = { type: form.type, cat: form.cat, amount: form.amount, who: form.who, card: form.card, date: form.date, comment: form.comment };
+  call('addOperation', [sent], function () {
+    var c = S.cats.filter(function (x) { return x.name === sent.cat; })[0];
+    var msg = 'Сохранено: ' + money(sent.amount) + ' ₸';
+    if (sent.type === 'Расход' && c && c.group !== 'Копилка' && c.limit > 0) {
+      msg += c.left < 0 ? ' · перерасход ' + money(-c.left) + ' ₸!' : ' · осталось ' + money(c.left) + ' ₸';
+    }
+    toast(msg);
+    form.amount = ''; form.comment = ''; form.cat = sent.type === 'Доход' || sent.type === 'Долг' ? '' : form.cat;
+  });
+}
+
+// ------------------------------------------------------------ 📊 Месяц
+function renderMonth() {
+  var m = S.month;
+  var html = alertsHtml();
+  html += '<div class="card"><div class="muted">Осталось на руках в этом месяце</div>' +
+    '<div class="big num ' + (m.left < 0 ? 'neg' : '') + '">' + money(m.left) + ' ₸</div>' +
+    '<table style="margin-top:8px">' +
+    '<tr><td>Доходы пришли</td><td class="num">' + money(m.incomeFact) + ' из ' + money(m.incomePlan) + '</td></tr>' +
+    '<tr><td>Расходы</td><td class="num">' + money(m.spent) + '</td></tr>' +
+    '<tr><td>Возврат долгов</td><td class="num">' + money(m.debtPaid) + '</td></tr>' +
+    '<tr><td>Отложено на дом</td><td class="num">' + money(m.house) + '</td></tr>' +
+    '<tr><td class="muted">По плану свободно</td><td class="num muted">' + money(m.planFree) + '</td></tr>' +
+    '</table></div>';
+
+  function block(title, list) {
+    if (!list.length) return '';
+    var sumL = 0, sumS = 0; list.forEach(function (c) { sumL += c.limit; sumS += c.spent; });
+    return '<div class="card"><h2>' + title + ' <span class="muted num" style="font-weight:400">' + money(sumS) + ' / ' + money(sumL) + '</span></h2>' +
+      list.map(function (c) {
+        var right = c.limit > 0 ? money(c.spent) + ' / ' + money(c.limit) : money(c.spent);
+        var sub = c.limit > 0 ? (c.left >= 0 ? 'осталось ' + money(c.left) : '<span class="neg">перерасход ' + money(-c.left) + '</span>') : 'без лимита';
+        if (c.day) sub += ' · оплата ' + c.day + ' числа';
+        return '<div class="item"><div class="row"><b>' + esc(c.name) + '</b><span class="num">' + right + '</span></div>' +
+          (c.limit > 0 ? bar(c.pct, c.group === 'Кредит') : '') +
+          '<div class="muted">' + sub + '</div></div>';
+      }).join('') + '</div>';
+  }
+  html += block('Обязательные расходы', S.cats.filter(function (c) { return c.group === 'Бюджет'; }));
+  html += block('Кредиты', S.cats.filter(function (c) { return c.group === 'Кредит' && c.active; }));
+  html += block('Из копилки в этом месяце', S.cats.filter(function (c) { return c.group === 'Копилка'; }).map(function (c) {
+    return { name: c.name, limit: 0, spent: c.spent, left: 0, pct: 0 };
+  }));
+  $('tab-month').innerHTML = html;
+}
+
+// ------------------------------------------------------------ 💰 Доходы
+function renderIncome() {
+  var html = S.incomes.map(function (p) {
+    return '<div class="card"><div class="row"><h2>' + esc(p.who) + '</h2><span class="num">' + money(p.fact) + ' / ' + money(p.plan) + ' ₸</span></div>' +
+      bar(p.plan ? Math.round(p.fact / p.plan * 100) : 0, true) +
+      p.sources.map(function (s) {
+        var done = s.fact >= s.plan && s.plan > 0;
+        return '<div class="item"><div class="row"><span>' + (done ? '✅ ' : '⏳ ') + esc(s.source) + '</span>' +
+          '<span class="num">' + money(s.fact) + ' / ' + money(s.plan) + '</span></div>' +
+          '<div class="muted">' + (s.day ? s.day + ' числа' : 'в течение месяца') + (s.note ? ' · ' + esc(s.note) : '') + '</div></div>';
+      }).join('') + '</div>';
+  }).join('');
+  var people = S.options.people;
+  html += '<div class="card"><h2>По месяцам</h2><table><tr><th>Месяц</th>' +
+    people.map(function (p) { return '<th>' + esc(p) + '</th>'; }).join('') + '<th>Всего</th><th>Расходы</th></tr>' +
+    S.history.map(function (h) {
+      return '<tr><td>' + esc(h.text) + '</td>' + people.map(function (p) { return '<td class="num">' + money(h.byWho[p]) + '</td>'; }).join('') +
+        '<td class="num"><b>' + money(h.total) + '</b></td><td class="num">' + money(h.spent) + '</td></tr>';
+    }).join('') + '</table></div>';
+  $('tab-income').innerHTML = html;
+}
+
+// ------------------------------------------------------------ 📉 Долги
+function renderDebts() {
+  var credits = S.cats.filter(function (c) { return c.group === 'Кредит'; });
+  var html = '<div class="card"><h2>Кредиты</h2>' + credits.map(function (c) {
+    if (!c.active) return '<div class="item"><div class="row"><b>' + esc(c.name) + '</b><span class="pos">✅ закрыт</span></div></div>';
+    var paid = c.spent >= c.payment;
+    return '<div class="item"><div class="row"><b>' + esc(c.name) + '</b><span class="num">' + money(c.payment) + ' ₸/мес</span></div>' +
+      '<div class="muted">' + (c.day ? 'платёж ' + c.day + ' числа · ' : '') + (paid ? '✅ за этот месяц оплачено' : '⏳ за этот месяц ещё не внесено') + '</div>' +
+      (c.last ? '<div class="muted">Последний платёж: ' + esc(c.lastText) + ' · ' + (c.paymentsLeft ? 'осталось платежей: ' + c.paymentsLeft + ' (≈ ' + money(c.remaining) + ' ₸)' : '🎉 все платежи внесены') + '</div>' : '') +
+      '</div>';
+  }).join('') + '</div>';
+
+  var total = 0, paid = 0; S.debts.forEach(function (d) { total += d.amount; paid += d.paid; });
+  html += '<div class="card"><div class="muted">Долги людям: осталось вернуть</div><div class="big num">' + money(S.debtLeft) + ' ₸</div>' +
+    bar(total ? Math.round(paid / total * 100) : 0, true) +
+    '<div class="muted">Вернули ' + money(paid) + ' из ' + money(total) + ' · все долги закроем: <b>' + esc(S.debtsDone) + '</b></div></div>';
+  html += '<div class="card"><h2>Порядок возврата</h2>' + S.debts.map(function (d, i) {
+    var pct = d.amount ? Math.round(d.paid / d.amount * 100) : 0;
+    return '<div class="item"><div class="row"><b>' + (i + 1) + '. ' + esc(d.name) + '</b><span class="num">' + money(d.paid) + ' / ' + money(d.amount) + '</span></div>' +
+      bar(pct, true) +
+      '<div class="muted">' + (d.left <= 0 ? '✅ вернули полностью' : 'осталось ' + money(d.left) + ' ₸ · по плану закроем: ' + esc(d.closeText || 'позже')) + '</div></div>';
+  }).join('') + '<div class="muted" style="margin-top:8px">Возврат вносите на вкладке ➕ → «Долг». Список и порядок — в листе «Долги».</div></div>';
+  $('tab-debts').innerHTML = html;
+}
+
+// ------------------------------------------------------------ 🐷 Копилка и дни рождения
+function renderKop() {
+  var kop = S.cats.filter(function (c) { return c.group === 'Копилка'; });
+  var sum = 0; kop.forEach(function (c) { sum += c.balance; });
+  var html = '<div class="card"><div class="muted">Сейчас в копилке (непредвиденные, врачи, праздники, ДР)</div>' +
+    '<div class="big num ' + (sum < 0 ? 'neg' : '') + '">' + money(sum) + ' ₸</div>' +
+    '<div class="muted">Каждый месяц пополняется, неистраченное остаётся. Трата из копилки — ➕ → «Расход» → раздел «Копилка».</div></div>';
+  html += '<div class="card">' + kop.map(function (c) {
+    return '<div class="item"><div class="row"><b>' + esc(c.name) + '</b><span class="num ' + (c.balance < 0 ? 'neg' : '') + '">' + money(c.balance) + ' ₸</span></div>' +
+      '<div class="muted">+' + money(c.limit) + ' в месяц · накоплено ' + money(c.accrued) + ' · потрачено ' + money(c.spentAll) + '</div></div>';
+  }).join('') + '</div>';
+
+  html += '<div class="card"><h2>🎂 Дни рождения</h2>' +
+    (S.bdays.length ? S.bdays.map(function (b) {
+      var soon = b.daysLeft <= 7;
+      return '<div class="op"><div class="w"><div><b>' + esc(b.name) + '</b> · ' + esc(b.date) + '</div>' +
+        '<div class="muted">' + (b.daysLeft === 0 ? '🎉 сегодня!' : (soon ? '⚠️ ' : '') + 'через ' + b.daysLeft + ' дн.') +
+        (b.gift ? ' · подарок ' + money(b.gift) + ' ₸' : '') + (b.note ? ' · ' + esc(b.note) : '') + '</div></div>' +
+        '<button class="del" data-name="' + esc(b.name) + '" data-date="' + esc(b.date) + '">✕</button></div>';
+    }).join('') : '<div class="muted">Список пуст — добавьте ниже.</div>') +
+    '<label>Добавить</label><input id="bname" placeholder="Имя">' +
+    '<div class="two" style="margin-top:8px"><input id="bdate" inputmode="numeric" placeholder="ДД.ММ"><input id="bgift" inputmode="numeric" placeholder="Подарок, ₸"></div>' +
+    '<button class="btn" id="badd">Добавить день рождения</button></div>';
+  $('tab-kop').innerHTML = html;
+
+  $('badd').onclick = function () {
+    var b = { name: $('bname').value, date: $('bdate').value, gift: $('bgift').value.replace(/\D/g, '') };
+    if (!b.name.trim() || !/^\d{1,2}[.\/]\d{1,2}$/.test(b.date.trim())) { toast('Введите имя и дату в виде ДД.ММ'); return; }
+    this.disabled = true;
+    call('addBirthday', [b], function () { toast('Добавлено: ' + b.name); });
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('#tab-kop .del'), function (btn) {
+    btn.onclick = function () {
+      if (!confirm('Удалить ' + btn.dataset.name + ' из списка?')) return;
+      call('deleteBirthday', [btn.dataset.name, btn.dataset.date]);
+    };
+  });
+}
+
+// ------------------------------------------------------------ 🏠 Дом
+function renderHouse() {
+  var h = S.house;
+  var html = '<div class="card"><div class="muted">Накоплено на первоначальный взнос</div>' +
+    '<div class="big num">' + money(h.saved) + ' ₸</div>' + bar(h.pct, true) +
+    '<div class="row muted"><span>' + h.pct + '%</span><span>цель ' + money(h.goal) + ' ₸</span></div></div>';
+  html += '<div class="card"><h2>Прогноз</h2><table>' +
+    '<tr><td>Долги людям закроем</td><td><b>' + esc(S.debtsDone) + '</b></td></tr>' +
+    '<tr><td>Взнос накопим</td><td><b>' + esc(h.goalText) + '</b></td></tr>' +
+    (h.monthsToGoal ? '<tr><td>Осталось месяцев</td><td class="num">' + h.monthsToGoal + '</td></tr>' : '') +
+    '<tr><td>Свободно в месяц сейчас</td><td class="num">' + money(h.freeNow) + '</td></tr>' +
+    '<tr><td>После закрытия кредитов</td><td class="num">' + money(h.freeLater) + '</td></tr>' +
+    '</table><div class="muted" style="margin-top:8px">Считаем по плану: доход ' + money(S.month.incomePlan) +
+    ' ₸ минус лимиты, копилка и кредиты. Сначала все свободные деньги идут на долги людям, потом — на дом. ' +
+    'Дом ' + money(h.housePrice) + ' ₸ × ' + Math.round(h.share * 100) + '%.</div></div>';
+  html += '<div class="card"><div class="muted">Отложили деньги на дом? Внесите на вкладке ➕ → «На дом».</div></div>';
+  $('tab-house').innerHTML = html;
+}
+
+// ------------------------------------------------------------ запуск
+function isInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+var installEvent = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault(); installEvent = e;
+  $('install-btn').classList.remove('hidden');
+  $('install-hint').textContent = 'Значок появится на экране телефона.';
+});
+$('install-btn').onclick = function () {
+  if (!installEvent) return;
+  installEvent.prompt();
+  installEvent.userChoice.then(function () { installEvent = null; $('install').classList.add('hidden'); });
+};
+window.addEventListener('appinstalled', function () { $('install').classList.add('hidden'); toast('Приложение установлено'); });
+
+$('refresh').onclick = function () { call('getState'); };
+$('connect-btn').onclick = function () {
+  var c = parseConn($('connect-input').value);
+  if (!c) { toast('Это не ссылка подключения. Скопируйте её из таблицы целиком.'); return; }
+  store('conn', JSON.stringify(c));
+  $('loading').classList.remove('hidden'); $('connect').classList.add('hidden');
+  call('getState', [], function () { toast('Телефон подключён ✓'); });
+};
+document.addEventListener('visibilitychange', function () {
+  // вернулись в приложение — подтянуть свежие данные (например, что внесла Наталья)
+  if (document.visibilityState === 'visible' && getConn() && S && !busy) call('getState');
+});
+
+/** Ссылка подключения …#c=КОД: сохраняем ключ и убираем его из адресной строки. */
+function takeHash() {
+  if (!/[#&]c=/.test(location.hash)) return false;
+  var c = parseConn(location.hash);
+  history.replaceState(null, '', location.pathname + location.search);
+  if (c) { store('conn', JSON.stringify(c)); setTimeout(function () { toast('Телефон подключён ✓'); }, 300); }
+  else setTimeout(function () { toast('Ссылка подключения повреждена — скопируйте её заново'); }, 300);
+  return !!c;
+}
+window.addEventListener('hashchange', function () {
+  if (takeHash()) { store('state', ''); S = null; $('loading').classList.remove('hidden'); $('connect').classList.add('hidden'); call('getState'); }
+});
+
+(function start() {
+  takeHash();
+  if (!getConn()) { showConnect(); return; }
+  // 2) сразу показываем сохранённые данные, потом обновляем из таблицы
+  try { S = JSON.parse(store('state') || 'null'); } catch (e) { S = null; }
+  if (S) render();
+  call('getState');
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
