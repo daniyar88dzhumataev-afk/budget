@@ -326,7 +326,7 @@ function renderAdd() {
       return '<div class="op"><div class="w"><div>' + esc(r.cat) + ' <span class="tag">' + esc(r.type) + '</span></div>' +
         '<div class="muted">' + dmy(r.date) + ' · ' + esc(r.who) + (r.card ? ' · ' + esc(r.card) : '') + (r.comment ? ' · ' + esc(r.comment) : '') + '</div></div>' +
         '<div class="num ' + cls + '">' + sign + money(r.amount) + '</div>' +
-        '<button class="del" data-id="' + esc(r.id) + '" title="Удалить">✕</button></div>';
+        (r.id ? '<button class="del" data-id="' + esc(r.id) + '" title="Удалить">✕</button>' : '') + '</div>';
     }).join('') : '<div class="muted">Пока нет записей в этом месяце.</div>') + '</div>';
   $('tab-add').innerHTML = html;
 
