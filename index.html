@@ -154,6 +154,7 @@
 var S = null;                       // состояние с сервера
 var tab = 'add';
 var form = { type: 'Расход', cat: '', who: store('who') || '', card: '', date: '', comment: '', amount: '' };
+var expGroup = store('expGroup') || 'Обязательные';   // открытая группа категорий расхода
 
 function store(k, v) {
   try { if (v === undefined) return localStorage.getItem('fb_' + k); localStorage.setItem('fb_' + k, v); } catch (e) { return null; }
@@ -272,9 +273,22 @@ function alertsHtml(filter) {
 }
 
 // ------------------------------------------------------------ ➕ Добавить
+/** Группы категорий расхода в порядке переключателя; пустые группы не показываем. */
+function expenseGroups() {
+  var o = S.options;
+  var closed = S.cats.filter(function (c) { return c.group === 'Кредит' && c.active === false; }).map(function (c) { return c.name; });
+  return [['Обязательные', o.budget || []],
+          ['Кредиты', (o.credits || []).filter(function (n) { return closed.indexOf(n) < 0; })],
+          ['Копилка', o.kopilka || []]].filter(function (g) { return g[1].length; });
+}
+
 function catOptions() {
   var o = S.options;
-  if (form.type === 'Расход') return [['Обязательные', o.budget], ['Копилка', o.kopilka], ['Кредиты', o.credits]];
+  if (form.type === 'Расход') {
+    var eg = expenseGroups();
+    var cur = eg.filter(function (g) { return g[0] === expGroup; })[0] || eg[0];
+    return cur ? [['', cur[1]]] : [];
+  }
   if (form.type === 'Доход') return [['', (o.incomeSources[form.who] || []).concat(['Другое'])]];
   if (form.type === 'Долг') return [['Кому возвращаем', o.debts]];
   return [];
@@ -285,6 +299,8 @@ function renderAdd() {
   if (!form.who || o.people.indexOf(form.who) < 0) form.who = o.people[0] || '';
   if (!form.card) form.card = o.defaultCard[form.who] || o.cards[0] || '';
   if (!form.date) form.date = S.today;
+  var expGroups = form.type === 'Расход' ? expenseGroups() : [];
+  if (expGroups.length && !expGroups.some(function (g) { return g[0] === expGroup; })) expGroup = expGroups[0][0];
   var groups = catOptions();
   var chips = groups.map(function (g) {
     return (g[0] ? '<div class="grp">' + esc(g[0]) + '</div>' : '') + g[1].map(function (c) {
@@ -307,6 +323,9 @@ function renderAdd() {
       return '<button data-type="' + t + '" class="' + (form.type === t ? 'on' : '') + '">' + t + '</button>';
     }).join('') + '</div>' +
     '<input id="amount" class="amount" inputmode="numeric" autocomplete="off" placeholder="0 ₸" value="' + esc(form.amount ? money(form.amount) : '') + '">' +
+    (expGroups.length ? '<div class="seg" id="expgroups" style="margin:12px 0 0">' + expGroups.map(function (g) {
+      return '<button data-group="' + esc(g[0]) + '" class="' + (expGroup === g[0] ? 'on' : '') + '">' + esc(g[0]) + '</button>';
+    }).join('') + '</div>' : '') +
     (groups.length ? '<label>' + (form.type === 'Доход' ? 'Источник' : 'Категория') + '</label><div class="chips" id="cats">' + chips + '</div>' : '') +
     (catInfo ? '<div class="muted" style="margin-top:8px">' + catInfo + '</div>' : '') +
     '<label>Кто</label><div class="seg" id="who">' + o.people.map(function (p) {
@@ -333,6 +352,10 @@ function renderAdd() {
   $('types').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
     form.type = b.dataset.type; form.cat = ''; readForm(); renderAdd();
+  };
+  if ($('expgroups')) $('expgroups').onclick = function (e) {
+    var b = e.target.closest('button[data-group]'); if (!b || b.dataset.group === expGroup) return;
+    readForm(); expGroup = b.dataset.group; store('expGroup', expGroup); form.cat = ''; renderAdd();
   };
   if ($('cats')) $('cats').onclick = function (e) {
     var b = e.target.closest('button[data-cat]'); if (!b) return;

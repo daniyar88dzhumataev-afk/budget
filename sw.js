@@ -1,7 +1,7 @@
 // Офлайн-кэш экрана приложения. Данные бюджета сюда не попадают:
 // запросы к Google Таблице (другой сайт) кэш не трогает.
 // После изменения файлов приложения увеличьте номер версии.
-var CACHE = 'budget-v1';
+var CACHE = 'budget-v2';
 var FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', function (e) {
