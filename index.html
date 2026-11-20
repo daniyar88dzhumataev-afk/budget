@@ -549,7 +549,7 @@ $('connect-btn').onclick = function () {
   call('getState', [], function () { toast('Телефон подключён ✓'); });
 };
 document.addEventListener('visibilitychange', function () {
-  // вернулись в приложение — подтянуть свежие данные (например, что внесла Наталья)
+  // вернулись в приложение — подтянуть свежие данные (например, записи, внесённые с другого телефона)
   if (document.visibilityState === 'visible' && getConn() && S && !busy) call('getState');
 });
 
